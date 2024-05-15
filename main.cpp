@@ -50,14 +50,5 @@ void testTimer() {
 
 int main() {
     testLogColorized();
-    // // Get current time
-    // auto now = std::chrono::system_clock::now();
-    // auto now_c = std::chrono::system_clock::to_time_t(now);
-
-    // // Convert time to string
-    // std::string timeStr = std::ctime(&now_c);
-    // // Remove newline character from time string
-    // timeStr = timeStr.substr(0, timeStr.size() - 1);
-    // std::cout << timeStr << std::endl;
     return 0;
 }
