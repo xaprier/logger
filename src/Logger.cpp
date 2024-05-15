@@ -17,6 +17,7 @@ void Logger::setLogToFile(bool save) {
 }
 
 void Logger::log(LoggingLevel level, const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(level);
     auto color = LoggingLevelColor.at(level);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -26,6 +27,7 @@ void Logger::log(LoggingLevel level, const std::string &message) const {
 }
 
 void Logger::log(const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(m_logLevel);
     auto color = LoggingLevelColor.at(m_logLevel);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -36,6 +38,7 @@ void Logger::log(const std::string &message) const {
 
 void Logger::log(LoggingLevel level, int line,
                  const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(level);
     auto color = LoggingLevelColor.at(level);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -46,6 +49,7 @@ void Logger::log(LoggingLevel level, int line,
 }
 void Logger::log(LoggingLevel level, const char *func,
                  const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(level);
     auto color = LoggingLevelColor.at(level);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -53,6 +57,7 @@ void Logger::log(LoggingLevel level, const char *func,
 }
 void Logger::log(LoggingLevel level, int line, const char *func,
                  const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(level);
     auto color = LoggingLevelColor.at(level);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -63,6 +68,7 @@ void Logger::log(LoggingLevel level, int line, const char *func,
 }
 
 void Logger::log(LoggingLevel level, int line, const char *func) const {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string logLevelStr = LoggingLevelString.at(level);
     auto color = LoggingLevelColor.at(level);
     std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
@@ -122,6 +128,7 @@ void Logger::log_static(const std::string &message) {
 }
 
 void Logger::logToFile(const std::string &message) const {
+    std::lock_guard<std::mutex> lock(mtx);
     if (this->m_saveFile) {
         std::ofstream outputFile("log.txt", std::ios_base::app);
         if (outputFile.is_open()) {

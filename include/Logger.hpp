@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <string>
 
 #include "LoggingLevel.hpp"
@@ -16,8 +17,10 @@ class Logger {
     void setLogToFile(bool save);
     void log(LoggingLevel level, const std::string &message) const;
     void log(LoggingLevel level, int line, const std::string &message) const;
-    void log(LoggingLevel level, const char *func, const std::string &message) const;
-    void log(LoggingLevel level, int line, const char *func, const std::string &message) const;
+    void log(LoggingLevel level, const char *func,
+             const std::string &message) const;
+    void log(LoggingLevel level, int line, const char *func,
+             const std::string &message) const;
     void log(LoggingLevel level, int line, const char *func) const;
     void log(const std::string &message) const;
     static void log_static(LoggingLevel level, const std::string &message);
@@ -33,10 +36,14 @@ class Logger {
   private:
     void logToFile(const std::string &message) const;
     void logToFile(LoggingLevel level, const std::string &message) const;
-    void logToFile(LoggingLevel level, int line, const std::string &message) const;
-    void logToFile(LoggingLevel level, const char *func, const std::string &message) const;
-    void logToFile(LoggingLevel level, int line, const char *func, const std::string &message) const;
+    void logToFile(LoggingLevel level, int line,
+                   const std::string &message) const;
+    void logToFile(LoggingLevel level, const char *func,
+                   const std::string &message) const;
+    void logToFile(LoggingLevel level, int line, const char *func,
+                   const std::string &message) const;
     void logToFile(LoggingLevel level, int line, const char *func) const;
+    mutable std::mutex mtx;  // Mutex for thread-safe logging
     bool m_saveFile{};
     LoggingLevel m_logLevel;
 };
