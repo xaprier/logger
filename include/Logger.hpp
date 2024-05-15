@@ -15,6 +15,41 @@ class Logger {
   public:
     Logger(LoggingLevel level = LoggingLevel::INFO, std::string fileName = "log.txt", bool saveToFile = false, bool enableTimer = false)
         : m_logLevel{level}, m_fileName{fileName}, m_saveFile{saveToFile}, m_enableTime{enableTimer} {}
+
+    ~Logger() = default;
+
+    Logger(const Logger &other) : m_fileName(other.m_fileName),
+                                  m_enableTime(other.m_enableTime),
+                                  m_saveFile(other.m_saveFile),
+                                  m_logLevel(other.m_logLevel) {}
+
+    Logger &operator=(const Logger &other) {
+        if (this != &other) {
+            m_fileName = std::move(other.m_fileName);
+            m_enableTime = other.m_enableTime;
+            m_saveFile = other.m_saveFile;
+            m_logLevel = other.m_logLevel;
+        }
+        return *this;
+    }
+
+    Logger(Logger &&other) noexcept : m_fileName(std::move(other.m_fileName)),
+                                      m_enableTime(other.m_enableTime),
+                                      m_saveFile(other.m_saveFile),
+                                      m_logLevel(other.m_logLevel) {
+        // Since mutexes cannot be moved, we don't move mtx.
+    }
+
+    Logger &operator=(Logger &&other) noexcept {
+        if (this != &other) {
+            m_fileName = std::move(other.m_fileName);
+            m_enableTime = other.m_enableTime;
+            m_saveFile = other.m_saveFile;
+            m_logLevel = other.m_logLevel;
+        }
+        return *this;
+    }
+
     void enableLogToFile();
     void disableLogToFile();
     void setLogToFile(bool save);
