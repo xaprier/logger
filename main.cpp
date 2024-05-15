@@ -2,7 +2,7 @@
 #include <iostream>
 #include <thread>
 
-#include "LoggingLevel.hpp"
+#include "Logger.hpp"
 #include "LoggingTimer.hpp"
 
 void testLogWarn() {
