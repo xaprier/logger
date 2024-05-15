@@ -43,7 +43,7 @@ You can run the sample program with this command
 ./Logger_simple_app
 ```
 
-### ⛓️‍💥 How to use in your project
+### ⛓ How to use in your project
 
 You can use this project as an library to link your project with CMake.
 
