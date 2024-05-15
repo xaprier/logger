@@ -8,13 +8,19 @@
 
 #include "LoggingLevel.hpp"
 
+//! IMPORTANT You will have to include the file in main function's file to get real execution time.
+static const auto start_time = std::chrono::steady_clock::now();
+
 class Logger {
   public:
-    Logger(LoggingLevel level = LoggingLevel::INFO)
-        : m_logLevel{level}, m_saveFile{false} {}
+    Logger(LoggingLevel level = LoggingLevel::INFO, std::string fileName = "log.txt", bool saveToFile = false, bool enableTimer = false)
+        : m_logLevel{level}, m_fileName{fileName}, m_saveFile{saveToFile}, m_enableTime{enableTimer} {}
     void enableLogToFile();
     void disableLogToFile();
     void setLogToFile(bool save);
+    void enableTimer();
+    void disableTimer();
+    void setTimer(bool timingOn);
     void log(LoggingLevel level, const std::string &message) const;
     void log(LoggingLevel level, int line, const std::string &message) const;
     void log(LoggingLevel level, const char *func,
@@ -34,6 +40,7 @@ class Logger {
     static void log_static(const std::string &message);
 
   private:
+    void logTime() const;
     void logToFile(const std::string &message) const;
     void logToFile(LoggingLevel level, const std::string &message) const;
     void logToFile(LoggingLevel level, int line,
@@ -44,7 +51,9 @@ class Logger {
                    const std::string &message) const;
     void logToFile(LoggingLevel level, int line, const char *func) const;
     mutable std::mutex mtx;  // Mutex for thread-safe logging
-    bool m_saveFile{};
+    std::string m_fileName;
+    bool m_enableTime;
+    bool m_saveFile;
     LoggingLevel m_logLevel;
 };
 

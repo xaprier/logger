@@ -4,13 +4,12 @@
 #include <string>
 #include <unordered_map>
 
-enum class LoggingLevel {
-    DEBUG,
-    INFO,
-    LATENCY,
-    WARNING,
-    ERROR
-};
+enum class LoggingLevel { DEBUG,
+                          INFO,
+                          TESTING,
+                          LATENCY,
+                          WARNING,
+                          ERROR };
 
 // ANSI color codes
 #define CC_RESET "\033[0m"
@@ -25,6 +24,7 @@ enum class LoggingLevel {
 const std::unordered_map<LoggingLevel, std::string> LoggingLevelString{
     {LoggingLevel::DEBUG, "DEBUG"},
     {LoggingLevel::INFO, "INFO"},
+    {LoggingLevel::TESTING, "TESTING"},
     {LoggingLevel::LATENCY, "LATENCY"},
     {LoggingLevel::WARNING, "WARNING"},
     {LoggingLevel::ERROR, "ERROR"},
@@ -33,6 +33,7 @@ const std::unordered_map<LoggingLevel, std::string> LoggingLevelString{
 const std::unordered_map<LoggingLevel, const char *> LoggingLevelColor{
     {LoggingLevel::DEBUG, CC_MAGENTA},
     {LoggingLevel::INFO, CC_GREEN},
+    {LoggingLevel::TESTING, CC_YELLOW},
     {LoggingLevel::LATENCY, CC_CYAN},
     {LoggingLevel::WARNING, CC_BLUE},
     {LoggingLevel::ERROR, CC_RED},
