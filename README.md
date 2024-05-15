@@ -36,7 +36,7 @@ Than our Makefile is ready for build the source code. We have to access the dire
 cd build && make -j$(nproc)
 ```
 
-Than our compiled library is ready for run in the directory of the makefile with the name "logger"
+Than our compiled library is ready for run in the directory of the makefile with the name "Logger_simple_app"
 You can run the sample program with this command
 
 ```sh
@@ -47,10 +47,10 @@ You can run the sample program with this command
 
 You can use this project as an library to link your project with CMake.
 
-- Clone the repository to any place where you put libs.
+- Add the repository to any place where you put libs as an git submodule.
 
 ```sh
-git clone https://github.com/xaprier/logger.git lib/logger # if you have lib directory in your project for an example
+git submodule add https://github.com/xaprier/logger.git lib/logger # if you have lib directory in your project for an example
 ```
 
 - Add the project directory to your CMake project
