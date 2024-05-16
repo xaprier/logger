@@ -46,7 +46,6 @@ void testTimer() {
     LoggingTimer timer(__PRETTY_FUNCTION__);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
-#include <chrono>
 
 int main() {
     testLogColorized();
