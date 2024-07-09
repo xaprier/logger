@@ -28,7 +28,24 @@ add_executable(${PROJECT_NAME}_simple_app
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-  ${LOGGER_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+
+# Installation rules
+install(TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}Targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(FILES ${HPP_FILES} DESTINATION include/${PROJECT_NAME})
+
+install(EXPORT ${PROJECT_NAME}Targets
+  FILE ${PROJECT_NAME}Config.cmake
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE)
