@@ -23,7 +23,7 @@ add_library(${PROJECT_NAME} SHARED
   ${HPP_FILES}
 )
 
-add_executable(${PROJECT_NAME}_simple_app
+add_executable(${PROJECT_NAME}_TEST
   main.cpp
 )
 
@@ -31,6 +31,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
+
+target_link_libraries(${PROJECT_NAME}_TEST PRIVATE ${PROJECT_NAME})
+
+# Enable testing
+include(CTest)
+enable_testing()
+
+# Add test
+add_test(NAME LoggerTest COMMAND ${PROJECT_NAME}_TEST)
 
 # Installation rules
 install(TARGETS ${PROJECT_NAME}
@@ -47,5 +56,3 @@ install(EXPORT ${PROJECT_NAME}Targets
   NAMESPACE ${PROJECT_NAME}::
   DESTINATION lib/cmake/${PROJECT_NAME}
 )
-
-target_link_libraries(${PROJECT_NAME}_simple_app PRIVATE ${PROJECT_NAME})
