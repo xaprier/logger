@@ -2,6 +2,7 @@
 #define LOGGER_HPP
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <optional>
