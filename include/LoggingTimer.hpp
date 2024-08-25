@@ -24,7 +24,7 @@ class LoggingTimer : public Logger {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - m_start_time);
         long estimated_ms = duration.count();
         std::string functionName = std::string(m_function);
-        this->log(LoggingLevel::LATENCY, functionName + ": Estimated " + std::to_string(estimated_ms) + "ms");
+        this->log(functionName + ": Estimated " + std::to_string(estimated_ms) + "ms", LoggingLevel::LATENCY);
     }
 
   private:

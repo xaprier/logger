@@ -48,5 +48,4 @@ install(EXPORT ${PROJECT_NAME}Targets
   DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE)
 target_link_libraries(${PROJECT_NAME}_simple_app PRIVATE ${PROJECT_NAME})

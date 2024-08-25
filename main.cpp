@@ -1,5 +1,4 @@
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 #include "Logger.hpp"
@@ -7,11 +6,11 @@
 #include "LoggingTimer.hpp"
 
 void testLogWarn() {
-    Logger logger(LoggingLevel::WARNING);
+    Logger logger(LoggingLevel::WARNING, "log.txt", true, true);
     logger.log("Log Message");
 }
 void testLogError() {
-    Logger logger(LoggingLevel::ERROR);
+    Logger logger(LoggingLevel::ERROR, "log.txt", true, true);
     logger.log("Log Message");
 }
 void testLogDebug() {
@@ -28,9 +27,9 @@ void testLogInfo() {
 }
 void testLogTesting() {
     Logger logger(LoggingLevel::TESTING, "log.txt", true, true);
-    logger.log(LoggingLevel::TESTING, "Log Message");
+    logger.log("Log Message", LoggingLevel::TESTING);
     std::this_thread::sleep_for(std::chrono::milliseconds(2500));  // NOLINT
-    logger.log(LoggingLevel::TESTING, "Log Message");
+    logger.log("Log Message", LoggingLevel::TESTING);
 }
 
 void testLogColorized() {

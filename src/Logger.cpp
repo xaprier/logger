@@ -30,183 +30,79 @@ void Logger::setTimer(bool timingOn) {
     this->m_enableTime = timingOn;
 }
 
-void Logger::log(LoggingLevel level, const std::string &message) const {
-    {
-        std::scoped_lock<std::mutex> lock(mtx);
-        std::string logLevelStr = LoggingLevelString.at(level);
-        auto color = LoggingLevelColor.at(level);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << ": " << message << CC_RESET << std::endl;
+void Logger::getText(std::string &target,
+                     const std::string &message,
+                     const std::optional<LoggingLevel> &level,
+                     const std::optional<int> &line,
+                     const std::optional<const char *> &func) {
+    if (level) {
+        std::string logLevelStr = LoggingLevelString.at(*level);
+        auto color = LoggingLevelColor.at(*level);
+        target += std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "] ";
     }
 
-    this->logToFile(level, message);
+    if (line) {
+        target += CC_YELLOW + std::string("Line ") + std::to_string(*line) + ", ";
+    }
+
+    if (func) {
+        target += CC_YELLOW + std::string(*func) + ": ";
+    }
+
+    target += CC_YELLOW + message + CC_RESET;
 }
 
-void Logger::log(const std::string &message) const {
+void Logger::log(const std::string &message,
+                 const std::optional<LoggingLevel> &level,
+                 const std::optional<int> &line,
+                 const std::optional<const char *> &func) const {
     {
         std::scoped_lock<std::mutex> lock(mtx);
+        if (this->m_enableTime) this->logTime();
+        if (level)
+            Logger::log_static(message, level, line, func);
+        else
+            Logger::log_static(message, m_logLevel, line, func);
+    }
+    this->logToFile(message, level, line, func);
+}
+
+void Logger::log_static(const std::string &message,
+                        const std::optional<LoggingLevel> &level,
+                        const std::optional<int> &line,
+                        const std::optional<const char *> &func) {
+    std::string output{};
+    getText(output, message, level, line, func);
+    std::cout << output << std::endl;
+}
+
+void Logger::logToFile(const std::string &message,
+                       const std::optional<LoggingLevel> &level,
+                       const std::optional<int> &line,
+                       const std::optional<const char *> &func) const {
+    std::string output{};
+    getText(output, message, level, line, func);
+    // we should add output of level if there is not exists
+    if (!level) {
         std::string logLevelStr = LoggingLevelString.at(m_logLevel);
         auto color = LoggingLevelColor.at(m_logLevel);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << ": " << message << CC_RESET << std::endl;
+        auto text = std::string(std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "] ");
+        output.insert(0, text);
     }
-
-    this->logToFile(m_logLevel, message);
-}
-
-void Logger::log(LoggingLevel level, int line,
-                 const std::string &message) const {
+    removeAnsiCodes(output);
     {
         std::scoped_lock<std::mutex> lock(mtx);
-        std::string logLevelStr = LoggingLevelString.at(level);
-        auto color = LoggingLevelColor.at(level);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << "Line " << line << ": " << message << CC_RESET
-                  << std::endl;
-    }
-
-    this->logToFile(level, line, message);
-}
-
-void Logger::log(LoggingLevel level, const char *func,
-                 const std::string &message) const {
-    {
-        std::scoped_lock<std::mutex> lock(mtx);
-        std::string logLevelStr = LoggingLevelString.at(level);
-        auto color = LoggingLevelColor.at(level);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << func << ": " << message << CC_RESET << std::endl;
-    }
-
-    this->logToFile(level, func, message);
-}
-
-void Logger::log(LoggingLevel level, int line, const char *func,
-                 const std::string &message) const {
-    {
-        std::scoped_lock<std::mutex> lock(mtx);
-        std::string logLevelStr = LoggingLevelString.at(level);
-        auto color = LoggingLevelColor.at(level);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << "Line " << line << ", " << func << ": " << message
-                  << CC_RESET << std::endl;
-    }
-
-    this->logToFile(level, line, func, message);
-}
-
-void Logger::log(LoggingLevel level, int line, const char *func) const {
-    {
-        std::scoped_lock<std::mutex> lock(mtx);
-        std::string logLevelStr = LoggingLevelString.at(level);
-        auto color = LoggingLevelColor.at(level);
-        if (this->m_enableTime) this->logTime();
-        std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-                  << CC_YELLOW << "Line " << line << ", " << func << CC_RESET
-                  << std::endl;
-    }
-
-    this->logToFile(level, line, func);
-}
-
-void Logger::log_static(LoggingLevel level, const std::string &message) {
-    std::string logLevelStr = LoggingLevelString.at(level);
-    auto color = LoggingLevelColor.at(level);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << ": " << message << std::endl;
-}
-
-void Logger::log_static(LoggingLevel level, int line,
-                        const std::string &message) {
-    std::string logLevelStr = LoggingLevelString.at(level);
-    auto color = LoggingLevelColor.at(level);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << "Line " << line << ": " << message << CC_RESET
-              << std::endl;
-}
-
-void Logger::log_static(LoggingLevel level, const char *func,
-                        const std::string &message) {
-    std::string logLevelStr = LoggingLevelString.at(level);
-    auto color = LoggingLevelColor.at(level);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << func << ": " << message << CC_RESET << std::endl;
-}
-
-void Logger::log_static(LoggingLevel level, int line, const char *func,
-                        const std::string &message) {
-    std::string logLevelStr = LoggingLevelString.at(level);
-    auto color = LoggingLevelColor.at(level);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << "Line " << line << ", " << func << ": " << message
-              << CC_RESET << std::endl;
-}
-
-void Logger::log_static(LoggingLevel level, int line, const char *func) {
-    std::string logLevelStr = LoggingLevelString.at(level);
-    auto color = LoggingLevelColor.at(level);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << "Line " << line << ", " << func << CC_RESET
-              << std::endl;
-}
-
-void Logger::log_static(const std::string &message) {
-    std::string logLevelStr =
-        LoggingLevelString.at(LoggingLevel::INFO);  // default info
-    auto color = LoggingLevelColor.at(LoggingLevel::INFO);
-    std::cout << CC_RESET << "[" << color << logLevelStr << CC_RESET << "] "
-              << CC_YELLOW << ": " << message << CC_RESET << std::endl;
-}
-
-void Logger::logToFile(const std::string &message) const {
-    std::scoped_lock<std::mutex> lock(mtx);
-    if (this->m_saveFile) {
-        std::ofstream outputFile(m_fileName, std::ios_base::app);
-        if (outputFile.is_open()) {
-            outputFile << message;
-            outputFile.close();
-        } else {
-            std::string logLevelStr = LoggingLevelString.at(LoggingLevel::ERROR);
-            std::cout << "[" << logLevelStr << "] "
-                      << "Line " << __LINE__ << ", " << __PRETTY_FUNCTION__ << ": "
-                      << "Unable to open log file!" << std::endl;
+        if (this->m_saveFile) {
+            std::ofstream outputFile(m_fileName, std::ios_base::app);
+            if (outputFile.is_open()) {
+                outputFile << output << std::endl;
+                outputFile.close();
+            } else {
+                std::string logLevelStr = LoggingLevelString.at(LoggingLevel::ERROR);
+                this->log_static("Unable to open log file!", LoggingLevel::ERROR, __LINE__, __PRETTY_FUNCTION__);
+            }
         }
     }
-}
-
-void Logger::logToFile(LoggingLevel level, const std::string &message) const {
-    const std::string logLevelStr = LoggingLevelString.at(level);
-    const std::string log = "[" + logLevelStr + "]" + ": " + message + "\n";
-    this->logToFile(log);
-}
-
-void Logger::logToFile(LoggingLevel level, int line, const std::string &message) const {
-    const std::string logLevelStr = LoggingLevelString.at(level);
-    const std::string log = "[" + logLevelStr + "] " + "Line " + std::to_string(line) + ": " + message + "\n";
-    this->logToFile(log);
-}
-
-void Logger::logToFile(LoggingLevel level, const char *func, const std::string &message) const {
-    const std::string logLevelStr = LoggingLevelString.at(level);
-    const std::string log = "[" + logLevelStr + "] " + func + ": " + message + "\n";
-    this->logToFile(log);
-}
-
-void Logger::logToFile(LoggingLevel level, int line, const char *func, const std::string &message) const {
-    const std::string logLevelStr = LoggingLevelString.at(level);
-    const std::string log = "[" + logLevelStr + "] " + "Line " + std::to_string(line) + ", " + func + ": " + message + "\n";
-    this->logToFile(log);
-}
-
-void Logger::logToFile(LoggingLevel level, int line, const char *func) const {
-    const std::string logLevelStr = LoggingLevelString.at(level);
-    const std::string log = "[" + logLevelStr + "] " + "Line " + std::to_string(line) + ", " + func + "\n";
-    this->logToFile(log);
 }
 
 void Logger::logTime() const {
@@ -229,4 +125,9 @@ void Logger::logTime() const {
     }
 
     std::cout << CC_RESET << "[" << CC_MAGENTA << execution << CC_RESET << unit << "]";
+}
+
+void Logger::removeAnsiCodes(std::string &text) {
+    std::regex ansiRegex(R"(\x1B\[[0-9;]*[a-zA-Z])");
+    text = std::regex_replace(text, ansiRegex, "");
 }
