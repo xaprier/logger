@@ -40,7 +40,7 @@ Than our compiled library is ready for run in the directory of the makefile with
 You can run the sample program with this command
 
 ```sh
-./Logger_simple_app
+./Logger_TEST
 ```
 
 ### ⛓ How to use in your project
