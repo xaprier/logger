@@ -57,6 +57,7 @@ class Logger {
     void enableLogToFile();
     void disableLogToFile();
     void setLogToFile(bool save);
+
     void enableTimer();
     void disableTimer();
     void setTimer(bool timingOn);
@@ -72,7 +73,7 @@ class Logger {
                            const std::optional<const char *> &func = std::nullopt);
 
   private:
-    void logTime() const;
+    std::string logTime() const;
     static void removeAnsiCodes(std::string &text);
 
     static void getText(std::string &target,
@@ -81,6 +82,7 @@ class Logger {
                         const std::optional<int> &line = std::nullopt,
                         const std::optional<const char *> &func = std::nullopt);
     void logToFile(const std::string &message,
+                   const std::optional<std::string> &time = std::nullopt,
                    const std::optional<LoggingLevel> &level = std::nullopt,
                    const std::optional<int> &line = std::nullopt,
                    const std::optional<const char *> &func = std::nullopt) const;

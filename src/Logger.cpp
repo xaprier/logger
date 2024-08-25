@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <mutex>
+#include <optional>
 #include <string>
 
 #include "LoggingLevel.hpp"
@@ -56,15 +57,20 @@ void Logger::log(const std::string &message,
                  const std::optional<LoggingLevel> &level,
                  const std::optional<int> &line,
                  const std::optional<const char *> &func) const {
+    std::string prefix{};
     {
+        if (this->m_enableTime)
+            prefix = this->logTime();
+
+        std::cout << prefix;
         std::scoped_lock<std::mutex> lock(mtx);
-        if (this->m_enableTime) this->logTime();
+
         if (level)
             Logger::log_static(message, level, line, func);
         else
             Logger::log_static(message, m_logLevel, line, func);
     }
-    this->logToFile(message, level, line, func);
+    this->logToFile(message, prefix, level, line, func);
 }
 
 void Logger::log_static(const std::string &message,
@@ -77,6 +83,7 @@ void Logger::log_static(const std::string &message,
 }
 
 void Logger::logToFile(const std::string &message,
+                       const std::optional<std::string> &time,
                        const std::optional<LoggingLevel> &level,
                        const std::optional<int> &line,
                        const std::optional<const char *> &func) const {
@@ -89,6 +96,11 @@ void Logger::logToFile(const std::string &message,
         auto text = std::string(std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "] ");
         output.insert(0, text);
     }
+
+    if (this->m_enableTime && time) {
+        output.insert(0, *time);
+    }
+
     removeAnsiCodes(output);
     {
         std::scoped_lock<std::mutex> lock(mtx);
@@ -105,7 +117,7 @@ void Logger::logToFile(const std::string &message,
     }
 }
 
-void Logger::logTime() const {
+std::string Logger::logTime() const {
     auto duration = std::chrono::steady_clock::now() - start_time;
     long double execution;
     std::string unit;
@@ -124,7 +136,11 @@ void Logger::logTime() const {
         unit = "s";
     }
 
-    std::cout << CC_RESET << "[" << CC_MAGENTA << execution << CC_RESET << unit << "]";
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(3) << execution;  // Set precision to 3 decimal places
+
+    std::string output = std::string(CC_RESET) + "[" + std::string(CC_MAGENTA) + oss.str() + std::string(CC_RESET) + unit + "]";
+    return output;
 }
 
 void Logger::removeAnsiCodes(std::string &text) {

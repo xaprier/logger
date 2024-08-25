@@ -28,7 +28,7 @@ void testLogInfo() {
 void testLogTesting() {
     Logger logger(LoggingLevel::TESTING, "log.txt", true, true);
     logger.log("Log Message", LoggingLevel::TESTING);
-    std::this_thread::sleep_for(std::chrono::milliseconds(2500));  // NOLINT
+    std::this_thread::sleep_for(std::chrono::milliseconds(1300));  // NOLINT
     logger.log("Log Message", LoggingLevel::TESTING);
 }
 
