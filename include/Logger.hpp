@@ -9,6 +9,7 @@
 #include <regex>
 #include <string>
 
+#include "LoggingHelpers.hpp"
 #include "LoggingLevel.hpp"
 
 //! IMPORTANT You will have to include the file in main function's file to get
@@ -129,10 +130,31 @@ class Logger {
      * @param line The line number (optional).
      * @param func The function name (optional).
      */
-    void log(const std::string &message,
+    template <typename T>
+    void log(const T &message,
              const std::optional<LoggingLevel> &level = std::nullopt,
              const std::optional<int> &line = std::nullopt,
-             const std::optional<const char *> &func = std::nullopt) const;
+             const std::optional<const char *> &func = std::nullopt) const {
+        // Convert the message to a string using std::ostringstream
+        std::ostringstream oss;
+        oss << message;
+        std::string messageStr = oss.str();
+
+        std::string prefix{};
+        {
+            if (this->m_enableTime)
+                prefix = this->logTime();
+
+            std::cout << prefix;
+            std::scoped_lock<std::mutex> lock(mtx);
+
+            if (level)
+                Logger::log_static(messageStr, level, line, func);
+            else
+                Logger::log_static(messageStr, m_logLevel, line, func);
+        }
+        this->logToFile(messageStr, prefix, level, line, func);
+    }
 
     /**
      * @brief Static function to log a message without creating a Logger instance.
@@ -141,10 +163,15 @@ class Logger {
      * @param line The line number (optional).
      * @param func The function name (optional).
      */
-    static void log_static(const std::string &message,
+    template <typename T>
+    static void log_static(const T &message,
                            const std::optional<LoggingLevel> &level = std::nullopt,
                            const std::optional<int> &line = std::nullopt,
-                           const std::optional<const char *> &func = std::nullopt);
+                           const std::optional<const char *> &func = std::nullopt) {
+        std::string output{};
+        getText(output, message, level, line, func);
+        std::cout << output << std::endl;
+    }
 
   private:
     /**
@@ -167,11 +194,28 @@ class Logger {
      * @param line The line number (optional).
      * @param func The function name (optional).
      */
+    template <typename T>
     static void getText(std::string &target,
-                        const std::string &message,
+                        const T &message,
                         const std::optional<LoggingLevel> &level = std::nullopt,
                         const std::optional<int> &line = std::nullopt,
-                        const std::optional<const char *> &func = std::nullopt);
+                        const std::optional<const char *> &func = std::nullopt) {
+        if (level) {
+            std::string logLevelStr = LoggingLevelString.at(*level);
+            auto color = LoggingLevelColor.at(*level);
+            target += std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "]";
+        }
+
+        if (line) {
+            target += std::string(CC_RESET) + "(" + CC_CYAN + "Line " + std::to_string(line.value()) + CC_RESET + ")";
+        }
+
+        if (func) {
+            target += std::string(CC_RESET) + "{" + CC_BLUE + func.value() + CC_RESET + "}";
+        }
+
+        target += ": " + std::string(CC_YELLOW) + message + std::string(CC_RESET);
+    }
 
     /**
      * @brief Logs the message to the given file
@@ -181,11 +225,41 @@ class Logger {
      * @param line The line number (optional).
      * @param func The function name (optional).
      */
-    void logToFile(const std::string &message,
+    template <typename T>
+    void logToFile(const T &message,
                    const std::optional<std::string> &time = std::nullopt,
                    const std::optional<LoggingLevel> &level = std::nullopt,
                    const std::optional<int> &line = std::nullopt,
-                   const std::optional<const char *> &func = std::nullopt) const;
+                   const std::optional<const char *> &func = std::nullopt) const {
+        std::string output{};
+        getText(output, message, level, line, func);
+        // we should add output of level if there is not exists
+        if (!level) {
+            std::string logLevelStr = LoggingLevelString.at(m_logLevel);
+            auto color = LoggingLevelColor.at(m_logLevel);
+            auto text = std::string(std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "] ");
+            output.insert(0, text);
+        }
+
+        if (this->m_enableTime && time) {
+            output.insert(0, *time);
+        }
+
+        removeAnsiCodes(output);
+        {
+            std::scoped_lock<std::mutex> lock(mtx);
+            if (this->m_saveFile) {
+                std::ofstream outputFile(m_fileName, std::ios_base::app);
+                if (outputFile.is_open()) {
+                    outputFile << output << std::endl;
+                    outputFile.close();
+                } else {
+                    std::string logLevelStr = LoggingLevelString.at(LoggingLevel::ERROR);
+                    this->log_static("Unable to open log file!", LoggingLevel::ERROR, __LINE__, __PRETTY_FUNCTION__);
+                }
+            }
+        }
+    }
 
     mutable std::mutex mtx;   ///< Mutex for thread-safe logging
     std::string m_fileName;   ///< Name of the log file
