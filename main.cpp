@@ -1,10 +1,7 @@
 #include <chrono>
-#include <cstddef>
 #include <list>
 #include <optional>
-#include <ostream>
-#include <sstream>
-#include <stack>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -12,9 +9,9 @@
 #include "LoggingLevel.hpp"
 #include "LoggingTimer.hpp"
 
-void testLogWarn() {
-    Logger logger(LoggingLevel::WARNING, "log.txt", true, true);
-    logger.log("Log Message");
+void testLogDebug() {
+    Logger logger(LoggingLevel::DEBUG);
+    logger.log(5.15, std::nullopt, __LINE__, __PRETTY_FUNCTION__);
 }
 
 void testLogError() {
@@ -22,18 +19,19 @@ void testLogError() {
     logger.log(123);
 }
 
-void testLogDebug() {
-    Logger logger(LoggingLevel::DEBUG);
-    logger.log(5.15, std::nullopt, __LINE__, __PRETTY_FUNCTION__);
+void testLogInfo() {
+    Logger logger(LoggingLevel::INFO);
+    logger.log("Log Message");
+}
+
+void testLogWarn() {
+    Logger logger(LoggingLevel::WARNING, "log.txt", true, true);
+    logger.log("Log Message");
+    logger.log(std::string("Log Message"));
 }
 
 void testLogLatency() {
     Logger logger(LoggingLevel::LATENCY);
-    logger.log("Log Message");
-}
-
-void testLogInfo() {
-    Logger logger(LoggingLevel::INFO);
     logger.log("Log Message");
 }
 

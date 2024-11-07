@@ -137,7 +137,11 @@ class Logger {
              const std::optional<const char *> &func = std::nullopt) const {
         // Convert the message to a string using std::ostringstream
         std::ostringstream oss;
-        oss << message;
+        if constexpr (std::is_same<T, std::string>::value) {
+            oss << message.c_str();  // std::string represents like ['a', 'b', 'c'], we will get char* to not happen
+        } else {
+            oss << message;
+        }
         std::string messageStr = oss.str();
 
         std::string prefix{};
