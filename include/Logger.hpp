@@ -1,6 +1,7 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
+#include <atomic>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -14,7 +15,7 @@
 
 //! IMPORTANT You will have to include the file in main function's file to get
 //! real execution time.
-static const auto start_time = std::chrono::steady_clock::now();
+static const auto logger_start_time = std::chrono::steady_clock::now();
 
 /**
  * @class Logger
@@ -26,102 +27,91 @@ static const auto start_time = std::chrono::steady_clock::now();
 class Logger {
   public:
     /**
-     * @brief Constructor for the Logger class.
-     * @param level The logging level (default: LoggingLevel::INFO).
-     * @param fileName The name of the log file (default: "log.txt").
-     * @param saveToFile Flag to enable/disable saving logs to a file (default: false).
-     * @param enableTimer Flag to enable/disable time-stamping of logs (default: false).
+     * @brief Gets the singleton instance of the Logger class.
+     * @return A reference to the singleton Logger instance.
      */
-    Logger(LoggingLevel level = LoggingLevel::INFO,
-           std::string fileName = "log.txt", bool saveToFile = false,
-           bool enableTimer = false)
-        : m_logLevel{level}, m_fileName{fileName}, m_saveFile{saveToFile}, m_enableTime{enableTimer} {}
-
-    /**
-     * @brief Default destructor for the Logger class.
-     */
-    ~Logger() = default;
-
-    /**
-     * @brief Copy constructor for the Logger class.
-     * @param other The Logger object to copy from.
-     */
-    Logger(const Logger &other)
-        : m_fileName(other.m_fileName), m_enableTime(other.m_enableTime), m_saveFile(other.m_saveFile), m_logLevel(other.m_logLevel) {}
-
-    /**
-     * @brief Copy assignment operator for the Logger class.
-     * @param other The Logger object to copy from.
-     * @return A reference to the current Logger object.
-     */
-    Logger &operator=(const Logger &other) {
-        if (this != &other) {
-            m_fileName = std::move(other.m_fileName);
-            m_enableTime = other.m_enableTime;
-            m_saveFile = other.m_saveFile;
-            m_logLevel = other.m_logLevel;
-        }
-        return *this;
+    static Logger &GetInstance(LoggingLevel level = LoggingLevel::INFO, std::string fileName = "log.txt", bool saveToFile = false, bool enableTimer = false, bool enable = true) {
+        static Logger instance(level, fileName, saveToFile, enableTimer, enable);
+        return instance;
     }
 
     /**
-     * @brief Move constructor for the Logger class.
-     * @param other The Logger object to move from.
+     * @brief Delete the move and copy constructors and assignment operators.
      */
-    Logger(Logger &&other) noexcept
-        : m_fileName(std::move(other.m_fileName)),
-          m_enableTime(other.m_enableTime),
-          m_saveFile(other.m_saveFile),
-          m_logLevel(other.m_logLevel) {
-        // Since mutexes cannot be moved, we don't move mtx.
-    }
+    Logger(const Logger &) = delete;
+    Logger &operator=(const Logger &) = delete;
+    Logger(Logger &&) = delete;
+    Logger &operator=(Logger &&) = delete;
 
     /**
-     * @brief Move assignment operator for the Logger class.
-     * @param other The Logger object to move from.
-     * @return A reference to the current Logger object.
+     * @brief Getters to check variables
      */
-    Logger &operator=(Logger &&other) noexcept {
-        if (this != &other) {
-            m_fileName = std::move(other.m_fileName);
-            m_enableTime = other.m_enableTime;
-            m_saveFile = other.m_saveFile;
-            m_logLevel = other.m_logLevel;
-        }
-        return *this;
-    }
+    bool IsLogEnabled() const;
+    bool IsTimerEnabled() const;
+    bool IsFileSaveEnabled() const;
+    bool IsColorEnabled() const;
+    LoggingLevel GetLevel() const;
+    std::string GetFileName() const;
+
+    /**
+     * @brief Enables logging.
+     */
+    void EnableLog();
+
+    /**
+     * @brief Disables logging.
+     */
+    void DisableLog();
+
+    /**
+     * @brief Sets the logging to an enabled/disabled state.
+     * @param save Flag to enable/disable logging.
+     */
+    void SetLog(bool save);
 
     /**
      * @brief Enables logging to a file.
      */
-    void enableLogToFile();
+    void EnableFile();
 
     /**
      * @brief Disables logging to a file.
      */
-    void disableLogToFile();
+    void DisableFile();
+
+    /**
+     * @brief Enables the timer for log messages.
+     */
+    void EnableTimer();
+
+    /**
+     * @brief Disables the timer for log messages.
+     */
+    void DisableTimer();
+
+    /**
+     * @brief Set the logging level
+     * @param level The logging level to set.
+     */
+    void SetLogLevel(LoggingLevel level);
+
+    /**
+     * @brief Set log file name
+     * @param fileName The name of the log file.
+     */
+    void SetLogFileName(const std::string &fileName);
 
     /**
      * @brief Sets the logging to a file option.
      * @param save Flag to enable/disable saving logs to a file.
      */
-    void setLogToFile(bool save);
-
-    /**
-     * @brief Enables the timer for log messages.
-     */
-    void enableTimer();
-
-    /**
-     * @brief Disables the timer for log messages.
-     */
-    void disableTimer();
+    void SetFile(bool save);
 
     /**
      * @brief Sets the timer option for log messages.
      * @param timingOn Flag to enable/disable time-stamping of logs.
      */
-    void setTimer(bool timingOn);
+    void SetTimer(bool timingOn);
 
     /**
      * @brief Logs a message to the console and optionally to a file.
@@ -131,10 +121,13 @@ class Logger {
      * @param func The function name (optional).
      */
     template <typename T>
-    void log(const T &message,
+    void Log(const T &message,
              const std::optional<LoggingLevel> &level = std::nullopt,
              const std::optional<int> &line = std::nullopt,
              const std::optional<const char *> &func = std::nullopt) const {
+        // Logging is disabled
+        if (!this->m_enable.load()) return;
+
         // Convert the message to a string using std::ostringstream
         std::ostringstream oss;
         if constexpr (std::is_same<T, std::string>::value) {
@@ -142,22 +135,24 @@ class Logger {
         } else {
             oss << message;
         }
+
         std::string messageStr = oss.str();
 
         std::string prefix{};
         {
             if (this->m_enableTime)
-                prefix = this->logTime();
+                prefix = this->_LogTime();
 
+            std::scoped_lock<std::mutex> lock(m_mtx);  // lock before printing to console
             std::cout << prefix;
-            std::scoped_lock<std::mutex> lock(mtx);
 
             if (level)
-                Logger::log_static(messageStr, level, line, func);
+                Logger::Log_Static(messageStr, level, line, func);
             else
-                Logger::log_static(messageStr, m_logLevel, line, func);
+                Logger::Log_Static(messageStr, m_logLevel, line, func);
         }
-        this->logToFile(messageStr, prefix, level, line, func);
+
+        if (this->m_saveFile) this->_ToFile(messageStr, prefix, level, line, func);
     }
 
     /**
@@ -168,27 +163,32 @@ class Logger {
      * @param func The function name (optional).
      */
     template <typename T>
-    static void log_static(const T &message,
+    static void Log_Static(const T &message,
                            const std::optional<LoggingLevel> &level = std::nullopt,
                            const std::optional<int> &line = std::nullopt,
                            const std::optional<const char *> &func = std::nullopt) {
         std::string output{};
-        getText(output, message, level, line, func);
+        _GetText(output, message, level, line, func);
         std::cout << output << std::endl;
     }
 
   private:
     /**
+     * @brief Constructor for the Logger class.
+     * @param level The logging level (default: LoggingLevel::INFO).
+     * @param fileName The name of the log file (default: "log.txt").
+     * @param saveToFile Flag to enable/disable saving logs to a file (default: false).
+     * @param enableTimer Flag to enable/disable time-stamping of logs (default: false).
+     */
+    Logger(LoggingLevel level = LoggingLevel::INFO, std::string fileName = "log.txt", bool saveToFile = false, bool enableTimer = false, bool enable = true);
+
+    ~Logger();
+
+    /**
      * @brief Gets the estimated time as a formatted string.
      * @return A string representing the estimated time.
      */
-    std::string logTime() const;
-
-    /**
-     * @brief Removes ANSI color codes from a string.
-     * @param text The string to remove ANSI codes from.
-     */
-    static void removeAnsiCodes(std::string &text);
+    std::string _LogTime() const;
 
     /**
      * @brief Formats a log message with optional parameters.
@@ -199,26 +199,29 @@ class Logger {
      * @param func The function name (optional).
      */
     template <typename T>
-    static void getText(std::string &target,
-                        const T &message,
-                        const std::optional<LoggingLevel> &level = std::nullopt,
-                        const std::optional<int> &line = std::nullopt,
-                        const std::optional<const char *> &func = std::nullopt) {
+    static void _GetText(std::string &target,
+                         const T &message,
+                         const std::optional<LoggingLevel> &level = std::nullopt,
+                         const std::optional<int> &line = std::nullopt,
+                         const std::optional<const char *> &func = std::nullopt) {
+        std::ostringstream oss;
+
         if (level) {
-            std::string logLevelStr = LoggingLevelString.at(*level);
-            auto color = LoggingLevelColor.at(*level);
-            target += std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "]";
+            const auto &logLevelStr = LoggingLevelString.at(*level);
+            oss << "[" << logLevelStr << "] ";
         }
 
         if (line) {
-            target += std::string(CC_RESET) + "(" + CC_CYAN + "Line " + std::to_string(line.value()) + CC_RESET + ")";
+            oss << "(Line " << *line << ") ";
         }
 
         if (func) {
-            target += std::string(CC_RESET) + "{" + CC_BLUE + func.value() + CC_RESET + "}";
+            oss << "{" << *func << "}";
         }
 
-        target += ": " + std::string(CC_YELLOW) + message + std::string(CC_RESET);
+        oss << ": " << message;
+
+        target += oss.str();
     }
 
     /**
@@ -230,18 +233,17 @@ class Logger {
      * @param func The function name (optional).
      */
     template <typename T>
-    void logToFile(const T &message,
-                   const std::optional<std::string> &time = std::nullopt,
-                   const std::optional<LoggingLevel> &level = std::nullopt,
-                   const std::optional<int> &line = std::nullopt,
-                   const std::optional<const char *> &func = std::nullopt) const {
+    void _ToFile(const T &message,
+                 const std::optional<std::string> &time = std::nullopt,
+                 const std::optional<LoggingLevel> &level = std::nullopt,
+                 const std::optional<int> &line = std::nullopt,
+                 const std::optional<const char *> &func = std::nullopt) const {
         std::string output{};
-        getText(output, message, level, line, func);
+        _GetText(output, message, level, line, func);
         // we should add output of level if there is not exists
         if (!level) {
             std::string logLevelStr = LoggingLevelString.at(m_logLevel);
-            auto color = LoggingLevelColor.at(m_logLevel);
-            auto text = std::string(std::string(CC_RESET) + "[" + color + logLevelStr + CC_RESET + "] ");
+            auto text = std::string("[" + logLevelStr + "] ");
             output.insert(0, text);
         }
 
@@ -249,9 +251,8 @@ class Logger {
             output.insert(0, *time);
         }
 
-        removeAnsiCodes(output);
         {
-            std::scoped_lock<std::mutex> lock(mtx);
+            std::scoped_lock<std::mutex> lock(m_mtx);
             if (this->m_saveFile) {
                 std::ofstream outputFile(m_fileName, std::ios_base::app);
                 if (outputFile.is_open()) {
@@ -259,17 +260,18 @@ class Logger {
                     outputFile.close();
                 } else {
                     std::string logLevelStr = LoggingLevelString.at(LoggingLevel::ERROR);
-                    this->log_static("Unable to open log file!", LoggingLevel::ERROR, __LINE__, __PRETTY_FUNCTION__);
+                    this->Log_Static("Unable to open log file!", LoggingLevel::ERROR, __LINE__, __PRETTY_FUNCTION__);
                 }
             }
         }
     }
 
-    mutable std::mutex mtx;   ///< Mutex for thread-safe logging
-    std::string m_fileName;   ///< Name of the log file
-    bool m_enableTime;        ///< Flag to enable/disable time-stamping of logs
-    bool m_saveFile;          ///< Flag to enable/disable saving logs to a file
-    LoggingLevel m_logLevel;  ///< Current logging level
+    mutable std::mutex m_mtx;              ///< Mutex for thread-safe logging
+    std::string m_fileName;                ///< Name of the log file
+    std::atomic<bool> m_enableTime;        ///< Flag to enable/disable time-stamping of logs
+    std::atomic<bool> m_saveFile;          ///< Flag to enable/disable saving logs to a file
+    std::atomic<bool> m_enable;            ///< Flag to enable/disable logging
+    std::atomic<LoggingLevel> m_logLevel;  ///< Current logging level
 };
 
 #endif

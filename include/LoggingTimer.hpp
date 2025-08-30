@@ -14,13 +14,14 @@
  * The LoggingTimer class automatically starts a timer upon creation and logs the elapsed time
  * when the object is destroyed. This is useful for measuring the latency of specific code blocks.
  */
-class LoggingTimer : public Logger {
+class LoggingTimer {
   public:
     /**
      * @brief Constructs a LoggingTimer object and starts the timer.
      * @param function The name of the function being timed (default is an empty string).
      */
-    LoggingTimer(const char *function = "") : Logger(LoggingLevel::LATENCY), m_function(function) {
+    LoggingTimer(const char *function = "") : m_function(function) {
+        m_logger.SetLogLevel(LoggingLevel::LATENCY);
         this->start();
     }
 
@@ -34,7 +35,10 @@ class LoggingTimer : public Logger {
     /**
      * @brief Starts the timer.
      */
-    inline void start() { m_start_time = std::chrono::high_resolution_clock::now(); }
+    inline void start() {
+        m_logger.Log("Started: " + std::string(m_function), LoggingLevel::LATENCY);
+        m_start_time = std::chrono::high_resolution_clock::now();
+    }
 
     /**
      * @brief Stops the timer and logs the elapsed time in milliseconds.
@@ -43,11 +47,11 @@ class LoggingTimer : public Logger {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - m_start_time);
         long estimated_ms = duration.count();
-        std::string functionName = std::string(m_function);
-        this->log(functionName + ": Estimated " + std::to_string(estimated_ms) + "ms", LoggingLevel::LATENCY);
+        m_logger.Log("End: " + std::string(m_function) + ": Estimated " + std::to_string(estimated_ms) + "ms", LoggingLevel::LATENCY);
     }
 
   private:
+    Logger &m_logger = Logger::GetInstance();                                  ///< Reference to the singleton Logger instance.
     const char *m_function;                                                    ///< The name of the function being timed.
     std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;  ///< The starting time point of the timer.
 };

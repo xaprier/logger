@@ -7,32 +7,86 @@
 
 #include "LoggingLevel.hpp"
 
-void Logger::enableLogToFile() {
-    this->m_saveFile = true;
+Logger::Logger(LoggingLevel level, std::string fileName, bool saveToFile, bool enableTimer, bool enable)
+    : m_logLevel{level}, m_fileName{fileName}, m_saveFile{saveToFile}, m_enableTime{enableTimer}, m_enable{enable} {
 }
 
-void Logger::disableLogToFile() {
-    this->m_saveFile = false;
+Logger::~Logger() {
+    if (!this->m_enable.load()) return;
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - logger_start_time);
+    std::lock_guard<std::mutex> lock(m_mtx);
+    std::ofstream file(m_fileName, std::ios::app);
+    if (file.is_open()) {
+        file << "[Logger] Shutting down. All logs flushed: " << duration.count() << "ms" << std::endl;
+    }
+    std::cout << "[Logger] Destructor executed: " << duration.count() << "ms\n";
 }
 
-void Logger::setLogToFile(bool save) {
-    this->m_saveFile = save;
+void Logger::EnableLog() {
+    this->m_enable.store(true);
+}
+void Logger::DisableLog() {
+    this->m_enable.store(false);
+}
+void Logger::SetLog(bool save) {
+    this->m_enable.store(save);
 }
 
-void Logger::enableTimer() {
-    this->m_enableTime = true;
+void Logger::EnableFile() {
+    this->m_saveFile.store(true);
 }
 
-void Logger::disableTimer() {
-    this->m_enableTime = false;
+void Logger::DisableFile() {
+    this->m_saveFile.store(false);
 }
 
-void Logger::setTimer(bool timingOn) {
-    this->m_enableTime = timingOn;
+void Logger::SetFile(bool save) {
+    this->m_saveFile.store(save);
 }
 
-std::string Logger::logTime() const {
-    auto duration = std::chrono::steady_clock::now() - start_time;
+void Logger::EnableTimer() {
+    this->m_enableTime.store(true);
+}
+
+void Logger::DisableTimer() {
+    this->m_enableTime.store(false);
+}
+
+void Logger::SetTimer(bool timingOn) {
+    this->m_enableTime.store(timingOn);
+}
+
+void Logger::SetLogLevel(LoggingLevel level) {
+    m_logLevel.store(level);
+}
+
+void Logger::SetLogFileName(const std::string &fileName) {
+    this->m_fileName = fileName;
+}
+
+bool Logger::IsLogEnabled() const {
+    return m_enable.load();
+}
+
+bool Logger::IsTimerEnabled() const {
+    return m_enableTime.load();
+}
+
+bool Logger::IsFileSaveEnabled() const {
+    return m_saveFile.load();
+}
+
+LoggingLevel Logger::GetLevel() const {
+    return m_logLevel.load();
+}
+
+std::string Logger::GetFileName() const {
+    return m_fileName;
+}
+
+std::string Logger::_LogTime() const {
+    auto duration = std::chrono::steady_clock::now() - logger_start_time;
     long double execution;
     std::string unit;
     if (duration < std::chrono::microseconds(1)) {
@@ -53,11 +107,6 @@ std::string Logger::logTime() const {
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(3) << execution;  // Set precision to 3 decimal places
 
-    std::string output = std::string(CC_RESET) + "[" + std::string(CC_MAGENTA) + oss.str() + std::string(CC_RESET) + unit + "]";
+    std::string output = "[" + oss.str() + unit + "]";
     return output;
-}
-
-void Logger::removeAnsiCodes(std::string &text) {
-    std::regex ansiRegex(R"(\x1B\[[0-9;]*[a-zA-Z])");
-    text = std::regex_replace(text, ansiRegex, "");
 }

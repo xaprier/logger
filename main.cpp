@@ -10,40 +10,40 @@
 #include "LoggingTimer.hpp"
 
 void testLogDebug() {
-    Logger logger(LoggingLevel::DEBUG);
-    logger.log(5.15, std::nullopt, __LINE__, __PRETTY_FUNCTION__);
+    auto &logger = Logger::GetInstance(LoggingLevel::DEBUG);
+    logger.Log(5.15, std::nullopt, __LINE__, __PRETTY_FUNCTION__);
 }
 
 void testLogError() {
-    Logger logger(LoggingLevel::ERROR, "log.txt", true, true);
-    logger.log(123);
+    auto &logger = Logger::GetInstance(LoggingLevel::ERROR, "log.txt", true, true);
+    logger.Log(123);
 }
 
 void testLogInfo() {
-    Logger logger(LoggingLevel::INFO);
-    logger.log("Log Message");
+    auto &logger = Logger::GetInstance(LoggingLevel::INFO);
+    logger.Log("Log Message");
 }
 
 void testLogWarn() {
-    Logger logger(LoggingLevel::WARNING, "log.txt", true, true);
-    logger.log("Log Message");
-    logger.log(std::string("Log Message"));
+    auto &logger = Logger::GetInstance(LoggingLevel::WARNING, "log.txt", true, true);
+    logger.Log("Log Message");
+    logger.Log(std::string("Log Message"));
 }
 
 void testLogLatency() {
-    Logger logger(LoggingLevel::LATENCY);
-    logger.log("Log Message");
+    auto &logger = Logger::GetInstance(LoggingLevel::LATENCY);
+    logger.Log("Log Message");
 }
 
 void testLogTesting() {
-    Logger logger(LoggingLevel::TESTING, "log.txt", true, true);
-    logger.log("Log Message", LoggingLevel::TESTING);
+    auto &logger = Logger::GetInstance(LoggingLevel::TESTING, "log.txt", true, true);
+    logger.Log("Log Message", LoggingLevel::TESTING);
     std::this_thread::sleep_for(std::chrono::milliseconds(1300));  // NOLINT
-    logger.log("Log Message", LoggingLevel::TESTING);
+    logger.Log("Log Message", LoggingLevel::TESTING);
 }
 
 void testLogContainers() {
-    Logger logger;
+    auto &logger = Logger::GetInstance();
 
     // Define various containers
     std::array<int, 5> arr = {1, 2, 3, 4, 5};
@@ -51,12 +51,17 @@ void testLogContainers() {
     std::list<double> lst = {3.14, 1.618, 2.718};
 
     // Log each container
-    logger.log(arr);  // Uses the specialized operator<< for std::array
-    logger.log(vec);  // Uses the general operator<< for std::vector
-    logger.log(lst);  // Uses the general operator<< for std::list
+    logger.Log(arr);  // Uses the specialized operator<< for std::array
+    logger.Log(vec);  // Uses the general operator<< for std::vector
+    logger.Log(lst);  // Uses the general operator<< for std::list
 }
 
-void testLogColorized() {
+void testLoggingTimer() {
+    LoggingTimer timer(__PRETTY_FUNCTION__);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+}
+
+void testLog() {
     testLogDebug();
     testLogError();
     testLogInfo();
@@ -64,14 +69,11 @@ void testLogColorized() {
     testLogLatency();
     testLogTesting();
     testLogContainers();
-}
-
-void testTimer() {
-    LoggingTimer timer(__PRETTY_FUNCTION__);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    testLoggingTimer();
 }
 
 int main() {
-    testLogColorized();
+    Logger::GetInstance(LoggingLevel::DEBUG, "log.txt", true, true, true);
+    testLog();
     return 0;
 }
